@@ -46,8 +46,6 @@ interface AppState {
   lists: CompanyList[];
   notes: CompanyNote[];
   savedSearches: SavedSearch[];
-
-  // for showing filtered results
   filteredCompanyIds: string[] | null;
 
   /* COMPANY */
@@ -68,6 +66,7 @@ interface AppState {
   ) => void;
   runSavedSearch: (searchId: string) => void;
   clearFilteredResults: () => void;
+  deleteSavedSearch: (id: string) => void;
 
   /* NOTES */
   addNote: (companyId: string, content: string) => void;
@@ -228,7 +227,6 @@ export const useStore = create<AppState>()(
         const search = get().savedSearches.find(
           (s) => s.id === searchId
         );
-
         if (!search) return;
 
         set({
@@ -238,6 +236,13 @@ export const useStore = create<AppState>()(
 
       clearFilteredResults: () =>
         set({ filteredCompanyIds: null }),
+
+      deleteSavedSearch: (id) =>
+        set((state) => ({
+          savedSearches: state.savedSearches.filter(
+            (s) => s.id !== id
+          ),
+        })),
 
       /* ==============================
          NOTES

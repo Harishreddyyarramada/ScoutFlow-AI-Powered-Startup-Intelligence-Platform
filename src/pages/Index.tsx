@@ -116,7 +116,7 @@ export default function Index() {
             </Button>
             <Button
               type="button"
-              onClick={() => navigate('/saved-searches')}
+              onClick={() => navigate('/saved')}
               variant="outline"
               className="border-2 border-purple-400/30 hover:bg-white/6 text-white rounded-xl text-lg font-semibold backdrop-blur-md bg-white/3 px-6 py-4 w-full sm:w-auto"
             >
