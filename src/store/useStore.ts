@@ -1,10 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import {
-  Company,
-  EnrichmentData,
-  mockCompanies,
-} from "@/data/mockCompanies";
+import { Company, EnrichmentData, mockCompanies } from "@/data/mockCompanies";
 
 export interface CompanyList {
   id: string;
@@ -25,20 +21,22 @@ interface AppState {
   lists: CompanyList[];
   notes: CompanyNote[];
 
+  // Company
   enrichCompany: (id: string, data: EnrichmentData) => void;
 
+  // Lists
   createList: (name: string) => void;
+  deleteList: (id: string) => void;
+  renameList: (id: string, name: string) => void;
   addToList: (listId: string, companyId: string) => void;
+  removeFromList: (listId: string, companyId: string) => void;
 
+  // Notes
   addNote: (companyId: string, content: string) => void;
   deleteNote: (noteId: string) => void;
 }
 
 const genId = () => Math.random().toString(36).slice(2, 10);
-
-// Remove duplicates helper
-const unique = (arr: string[]) =>
-  Array.from(new Set(arr.map((v) => v.trim().toLowerCase())));
 
 export const useStore = create<AppState>()(
   persist(
@@ -47,55 +45,37 @@ export const useStore = create<AppState>()(
       lists: [],
       notes: [],
 
-      /* =====================================================
-         🔥 ENRICH COMPANY (FULL SAFE UPDATE)
-      ===================================================== */
+      /* ==============================
+         ENRICH COMPANY
+      ============================== */
       enrichCompany: (id, data) =>
         set((state) => ({
-          companies: state.companies.map((company) => {
-            if (company.id !== id) return company;
-
-            const cleanedKeywords = data.keywords
-              ? unique(data.keywords).slice(0, 6)
-              : company.tags;
-
-            const detectedSignals =
-              data.signals?.filter((s) => s.detected).length || 0;
-
-            const newScore = Math.min(
-              100,
-              company.score + detectedSignals * 2
-            );
-
-            return {
-              ...company,
-
-              enriched: true,
-              enrichmentData: data,
-
-              // 🔥 Replace fields
-              description: data.summary || company.description,
-              tags: cleanedKeywords,
-
-              signals:
-                data.signals?.map((s, index) => ({
-                  type: "website",
-                  label: s.label,
-                  timestamp: new Date().toISOString(),
-                })) || company.signals,
-
-              score: newScore,
-            };
-          }),
+          companies: state.companies.map((company) =>
+            company.id === id
+              ? {
+                  ...company,
+                  enriched: true,
+                  enrichmentData: data,
+                  description: data.summary || company.description,
+                  tags: data.keywords?.slice(0, 6) || company.tags,
+                  score: Math.min(
+                    100,
+                    company.score +
+                      (data.signals?.filter((s) => s.detected).length || 0)
+                  ),
+                }
+              : company
+          ),
         })),
 
-      /* =====================================================
-         LISTS
-      ===================================================== */
+      /* ==============================
+         LIST FUNCTIONS
+      ============================== */
+
       createList: (name) =>
-        set((s) => ({
+        set((state) => ({
           lists: [
-            ...s.lists,
+            ...state.lists,
             {
               id: genId(),
               name,
@@ -105,25 +85,53 @@ export const useStore = create<AppState>()(
           ],
         })),
 
-      addToList: (listId, companyId) =>
-        set((s) => ({
-          lists: s.lists.map((l) =>
-            l.id === listId && !l.companyIds.includes(companyId)
-              ? {
-                  ...l,
-                  companyIds: [...l.companyIds, companyId],
-                }
-              : l
+      deleteList: (id) =>
+        set((state) => ({
+          lists: state.lists.filter((list) => list.id !== id),
+        })),
+
+      renameList: (id, name) =>
+        set((state) => ({
+          lists: state.lists.map((list) =>
+            list.id === id ? { ...list, name } : list
           ),
         })),
 
-      /* =====================================================
+      addToList: (listId, companyId) =>
+        set((state) => ({
+          lists: state.lists.map((list) =>
+            list.id === listId &&
+            !list.companyIds.includes(companyId)
+              ? {
+                  ...list,
+                  companyIds: [...list.companyIds, companyId],
+                }
+              : list
+          ),
+        })),
+
+      removeFromList: (listId, companyId) =>
+        set((state) => ({
+          lists: state.lists.map((list) =>
+            list.id === listId
+              ? {
+                  ...list,
+                  companyIds: list.companyIds.filter(
+                    (id) => id !== companyId
+                  ),
+                }
+              : list
+          ),
+        })),
+
+      /* ==============================
          NOTES
-      ===================================================== */
+      ============================== */
+
       addNote: (companyId, content) =>
-        set((s) => ({
+        set((state) => ({
           notes: [
-            ...s.notes,
+            ...state.notes,
             {
               id: genId(),
               companyId,
@@ -134,8 +142,8 @@ export const useStore = create<AppState>()(
         })),
 
       deleteNote: (noteId) =>
-        set((s) => ({
-          notes: s.notes.filter((n) => n.id !== noteId),
+        set((state) => ({
+          notes: state.notes.filter((n) => n.id !== noteId),
         })),
     }),
     {
