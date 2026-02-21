@@ -8,6 +8,7 @@ import Companies from "./pages/Companies";
 import CompanyProfile from "./pages/CompanyProfile";
 import Lists from "./pages/Lists";
 import SavedSearches from "./pages/SavedSearches";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/companies/:id" element={<CompanyProfile />} />
           <Route path="/lists" element={<Lists />} />
           <Route path="/saved" element={<SavedSearches />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

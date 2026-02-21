@@ -16,13 +16,13 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import {
-  Search, Filter, ChevronDown, ArrowUpDown, Bookmark, ExternalLink,
-  Briefcase, TrendingUp, Globe, Calendar, ChevronLeft, ChevronRight, Save,
+  Search, Filter, ChevronDown, ArrowUpDown, Bookmark,
+  ExternalLink, ChevronLeft, ChevronRight, Save, Home
 } from 'lucide-react';
-// framer-motion removed
 
 const SIGNAL_ICONS: Record<string, string> = {
-  hiring: '👥', blog: '📝', funding: '💰', founder: '👤', product: '🚀', website: '🌐',
+  hiring: '👥', blog: '📝', funding: '💰',
+  founder: '👤', product: '🚀', website: '🌐',
 };
 
 export default function Companies() {
@@ -38,6 +38,7 @@ export default function Companies() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const perPage = 10;
 
   const toggleSort = (key: typeof sortKey) => {
@@ -82,9 +83,9 @@ export default function Companies() {
   };
 
   return (
-    <div className="flex gap-6 fade-in">
-      {/* Filter Panel */}
-      <div className="w-56 shrink-0 space-y-1">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 fade-in px-4 sm:px-0">
+      {/* Desktop Filter Panel */}
+      <div className="hidden lg:block w-56 shrink-0 space-y-1">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
             <Filter className="h-3 w-3" /> Filters
@@ -120,7 +121,7 @@ export default function Companies() {
                     onCheckedChange={() => toggleFilter(group.key, opt)}
                     className="h-3.5 w-3.5"
                   />
-                  <span className="text-muted-foreground">{opt}</span>
+                  <span className="text-muted-foreground text-[12px]">{opt}</span>
                 </label>
               ))}
             </CollapsibleContent>
@@ -129,59 +130,109 @@ export default function Companies() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 min-w-0">
-        {/* Top bar */}
-        <div className="mb-4 flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
+      <div className="flex-1 min-w-0 w-full">
+        {/* Mobile Filters Collapsible */}
+        <div className="lg:hidden mb-4">
+          <Collapsible open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+            <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-secondary/30 px-3 py-2.5 text-sm font-medium hover:bg-secondary/50 transition-colors">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <span>Filters</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {activeFilterCount > 0 && <Badge variant="secondary" className="h-5 px-2 text-[11px]">{activeFilterCount}</Badge>}
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform" />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 space-y-2 px-2 pb-2">
+              {[
+                { label: 'Sector', key: 'sectors' as const, options: SECTORS },
+                { label: 'Stage', key: 'stages' as const, options: STAGES },
+                { label: 'Location', key: 'locations' as const, options: LOCATIONS },
+              ].map((group) => (
+                <div key={`m-${group.key}`} className="rounded-lg bg-background/50 border border-border/30 p-2.5">
+                  <h4 className="text-xs font-medium mb-2 text-foreground">{group.label}</h4>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {group.options.map((opt) => (
+                      <label key={opt} className="flex items-center gap-2 rounded px-2 py-1.5 text-xs cursor-pointer hover:bg-secondary transition-colors">
+                        <Checkbox
+                          checked={filters[group.key].includes(opt)}
+                          onCheckedChange={() => toggleFilter(group.key, opt)}
+                          className="h-3.5 w-3.5"
+                        />
+                        <span className="text-muted-foreground text-[12px]">{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={() => setFilters({ sectors: [], stages: [], locations: [], hiring: null, scoreRange: [0, 100] })}
+                  className="w-full text-xs text-primary hover:underline py-2 mt-2"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+
+        {/* Top bar - Search & Actions */}
+        <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => { setQuery(e.target.value); setPage(1); }}
               placeholder="Search companies..."
-              className="pl-9 h-9 text-sm"
+              className="pl-9 h-9 text-sm w-full"
             />
           </div>
-          <span className="text-xs text-muted-foreground">{filtered.length} results</span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto text-xs gap-1.5"
-            onClick={() => {
-              const name = prompt('Name this search:');
-              if (name) saveSearch(name, filters, query);
-            }}
-          >
-            <Save className="h-3 w-3" /> Save Search
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">{filtered.length} results</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs gap-1.5 h-9 px-2 flex-shrink-0"
+              onClick={() => {
+                const name = prompt('Name this search:');
+                if (name) saveSearch(name, filters, query);
+              }}
+            >
+              <Save className="h-3 w-3" />
+              <span className="hidden sm:inline">Save</span>
+            </Button>
+          </div>
         </div>
 
-        {/* Table */}
-        <div className="card-elevated overflow-hidden">
+        {/* Desktop Table */}
+        <div className="hidden md:block card-elevated overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-secondary/50">
-                <th className="w-10 px-3 py-2.5">
+                <th className="w-10 px-2 sm:px-3 py-2.5">
                   <Checkbox
                     checked={selected.size === paged.length && paged.length > 0}
                     onCheckedChange={toggleSelectAll}
                     className="h-3.5 w-3.5"
                   />
                 </th>
-                <th className="px-3 py-2.5 text-left">
+                <th className="px-2 sm:px-3 py-2.5 text-left">
                   <button onClick={() => toggleSort('name')} className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground">
                     Company <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
-                <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sector</th>
-                <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Stage</th>
-                <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location</th>
-                <th className="px-3 py-2.5 text-left">
+                <th className="hidden sm:table-cell px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sector</th>
+                <th className="hidden sm:table-cell px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Stage</th>
+                <th className="hidden lg:table-cell px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location</th>
+                <th className="px-2 sm:px-3 py-2.5 text-left">
                   <button onClick={() => toggleSort('score')} className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground">
                     Score <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
-                <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Signals</th>
-                <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</th>
+                <th className="hidden sm:table-cell px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Signals</th>
+                <th className="px-2 sm:px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -191,7 +242,7 @@ export default function Companies() {
                   onClick={() => navigate(`/companies/${company.id}`)}
                   className="border-b border-border/50 cursor-pointer transition-colors hover:bg-secondary/30"
                 >
-                  <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-2 sm:px-3 py-3" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={selected.has(company.id)}
                       onCheckedChange={() => {
@@ -202,45 +253,45 @@ export default function Companies() {
                       className="h-3.5 w-3.5"
                     />
                   </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2.5">
+                  <td className="px-2 sm:px-3 py-3 min-w-0">
+                    <div className="flex items-center gap-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary shrink-0">
                         {company.name.slice(0, 2).toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-medium text-foreground">{company.name}</p>
-                        <p className="text-[11px] text-muted-foreground truncate max-w-[180px]">{company.website}</p>
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground text-sm truncate">{company.name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{company.website}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="hidden sm:table-cell px-2 sm:px-3 py-3">
                     <Badge variant="secondary" className="text-[11px] font-normal">{company.sector}</Badge>
                   </td>
-                  <td className="px-3 py-3 text-muted-foreground text-xs">{company.stage}</td>
-                  <td className="px-3 py-3 text-muted-foreground text-xs">{company.location}</td>
-                  <td className="px-3 py-3">
+                  <td className="hidden sm:table-cell px-2 sm:px-3 py-3 text-muted-foreground text-xs">{company.stage}</td>
+                  <td className="hidden lg:table-cell px-2 sm:px-3 py-3 text-muted-foreground text-xs">{company.location}</td>
+                  <td className="px-2 sm:px-3 py-3">
                     <Popover>
                       <PopoverTrigger asChild>
                         <button><ScoreBadge score={company.score} /></button>
                       </PopoverTrigger>
-                      <PopoverContent side="right" className="p-0 w-56">
+                      <PopoverContent side="left" className="p-0 w-48 sm:w-56">
                         <ScoreBreakdown breakdown={company.scoreBreakdown} />
                       </PopoverContent>
                     </Popover>
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="hidden sm:table-cell px-2 sm:px-3 py-3">
                     <div className="flex gap-1">
                       {company.signals.slice(0, 3).map((s, i) => (
                         <span key={i} className="text-sm cursor-default" title={s.label}>{SIGNAL_ICONS[s.type] || '📌'}</span>
                       ))}
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-2 sm:px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:text-primary">
                         <Bookmark className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => window.open(company.website, '_blank')}>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:text-primary" onClick={() => window.open(company.website, '_blank')}>
                         <ExternalLink className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -251,26 +302,93 @@ export default function Companies() {
           </table>
         </div>
 
+        {/* Mobile Cards View */}
+        <div className="md:hidden space-y-3">
+          {paged.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No companies found</p>
+            </div>
+          ) : (
+            paged.map((company) => (
+              <div
+                key={`m-${company.id}`}
+                onClick={() => navigate(`/companies/${company.id}`)}
+                className="rounded-lg border border-border/40 bg-card p-3 cursor-pointer transition-shadow hover:shadow-md active:shadow-sm"
+              >
+                {/* Header Row */}
+                <div className="flex items-start gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary shrink-0">
+                    {company.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground text-sm truncate">{company.name}</p>
+                    <a href={company.website} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-[11px] text-primary hover:underline truncate block">
+                      {company.website}
+                    </a>
+                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <div className="shrink-0"><ScoreBadge score={company.score} /></div>
+                    </PopoverTrigger>
+                    <PopoverContent side="left" className="p-0 w-48">
+                      <ScoreBreakdown breakdown={company.scoreBreakdown} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Details Row */}
+                <div className="flex flex-wrap items-center gap-2 text-[12px] mb-2">
+                  <Badge variant="secondary" className="text-[10px] font-normal">{company.sector}</Badge>
+                  <span className="text-muted-foreground">{company.stage}</span>
+                  <span className="text-muted-foreground">{company.location}</span>
+                </div>
+
+                {/* Signals & Actions Row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-1">
+                    {company.signals.slice(0, 4).map((s, i) => (
+                      <span key={i} className="text-base cursor-default" title={s.label}>{SIGNAL_ICONS[s.type] || '📌'}</span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:text-primary">
+                      <Bookmark className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:text-primary" onClick={() => window.open(company.website, '_blank')}>
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
         {/* Pagination */}
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, filtered.length)} of {filtered.length}
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-muted-foreground text-center sm:text-left order-2 sm:order-1">
+            Showing {paged.length === 0 ? 0 : (page - 1) * perPage + 1}–{Math.min(page * perPage, filtered.length)} of {filtered.length}
           </p>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 order-1 sm:order-2 flex-wrap justify-center">
             <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)} className="h-7 w-7 p-0">
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
-            {Array.from({ length: totalPages }, (_, i) => (
-              <Button
-                key={i}
-                variant={page === i + 1 ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setPage(i + 1)}
-                className="h-7 w-7 p-0 text-xs"
-              >
-                {i + 1}
-              </Button>
-            ))}
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              const pageNum = page > 3 ? page - 2 + i : i + 1;
+              if (pageNum > totalPages) return null;
+              return (
+                <Button
+                  key={pageNum}
+                  variant={page === pageNum ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPage(pageNum)}
+                  className="h-7 w-7 p-0 text-xs"
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
+            {totalPages > 5 && page < totalPages - 2 && <span className="text-xs text-muted-foreground px-2">...</span>}
             <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="h-7 w-7 p-0">
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
