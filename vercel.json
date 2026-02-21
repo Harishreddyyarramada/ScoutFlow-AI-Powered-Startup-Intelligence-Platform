@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/enrich.ts": {
+    "server/routes/enrich.ts": {
       "memory": 1024,
       "maxDuration": 30
     }
