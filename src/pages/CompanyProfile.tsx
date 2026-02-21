@@ -40,36 +40,60 @@ export default function CompanyProfile() {
   }
 
   const handleEnrich = async () => {
-    setEnriching(true);
-    // Simulate enrichment API call
-    await new Promise((r) => setTimeout(r, 2500));
-    const mockData: EnrichmentData = {
-      summary: `${company.name} is ${company.description.toLowerCase()} Founded in ${company.foundedYear}, the company operates in the ${company.sector} space targeting ${company.stage}-stage growth.`,
-      bullets: [
-        `Core product focused on ${company.sector.toLowerCase()} innovation`,
-        `Headquartered in ${company.location} with ${company.employees} employees`,
-        'Strong technical team with domain expertise',
-        'Active product development cycle with recent releases',
-        'Growing customer base across target verticals',
-      ],
-      keywords: [...company.tags, company.sector, 'startup', 'innovation', 'growth'],
-      signals: [
-        { label: 'Careers page exists', detected: company.signals.some(s => s.type === 'hiring') },
-        { label: 'Blog updated recently', detected: company.signals.some(s => s.type === 'blog') },
-        { label: 'Changelog detected', detected: Math.random() > 0.4 },
-        { label: 'API documentation found', detected: company.sector === 'DevTools' || company.sector === 'SaaS' },
-      ],
-      sources: [
-        { url: company.website, fetchedAt: new Date().toISOString() },
-        { url: `${company.website}/about`, fetchedAt: new Date().toISOString() },
-        { url: `${company.website}/blog`, fetchedAt: new Date().toISOString() },
-      ],
-      fetchedAt: new Date().toISOString(),
-    };
-    enrichCompany(company.id, mockData);
-    setEnriching(false);
+  setEnriching(true);
+
+  const mockData: EnrichmentData = {
+    summary: `${company.name} is ${company.description.toLowerCase()} Founded in ${company.foundedYear}, the company operates in the ${company.sector} space targeting ${company.stage}-stage growth.`,
+    bullets: [
+      `Core product focused on ${company.sector.toLowerCase()} innovation`,
+      `Headquartered in ${company.location} with ${company.employees} employees`,
+      'Strong technical team with domain expertise',
+      'Active product development cycle with recent releases',
+      'Growing customer base across target verticals',
+    ],
+    keywords: [...company.tags, company.sector, 'startup', 'innovation', 'growth'],
+    signals: [
+      { label: 'Careers page exists', detected: company.signals.some(s => s.type === 'hiring') },
+      { label: 'Blog updated recently', detected: company.signals.some(s => s.type === 'blog') },
+      { label: 'Changelog detected', detected: Math.random() > 0.4 },
+      { label: 'API documentation found', detected: company.sector === 'DevTools' || company.sector === 'SaaS' },
+    ],
+    sources: [
+      { url: company.website, fetchedAt: new Date().toISOString() },
+    ],
+    fetchedAt: new Date().toISOString(),
   };
 
+  try {
+    const response = await fetch("/api/enrich", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        websiteUrl: company.website,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("API failed");
+    }
+
+    const realData = await response.json();
+
+    // Use real API data
+    enrichCompany(company.id, realData);
+
+  } catch (error) {
+    console.warn("Using mock data due to API failure:", error);
+
+    // Fallback to mock data
+    enrichCompany(company.id, mockData);
+
+  } finally {
+    setEnriching(false);
+  }
+};
   const handleAddNote = () => {
     if (!noteText.trim() || !id) return;
     addNote(id, noteText.trim());
