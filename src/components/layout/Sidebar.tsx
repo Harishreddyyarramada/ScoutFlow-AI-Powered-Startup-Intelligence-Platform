@@ -1,4 +1,4 @@
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation ,useNavigate} from "react-router-dom";
 import {
   Building2,
   List,
@@ -6,7 +6,8 @@ import {
   Settings,
   Zap,
   Home,
-  ChevronDown,
+  Menu,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -21,44 +22,38 @@ const navItems = [
 
 export function Sidebar() {
   const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-
-  const toggleMenu = () => setOpen((prev) => !prev);
-  const closeMenu = () => setOpen(false);
-
   return (
     <>
-      {/* ================= NAVBAR ================= */}
+      {/* ================= TOP NAVBAR ================= */}
       <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-background/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6">
         
-        {/* Left */}
-        <button
-          onClick={toggleMenu}
-          className="flex items-center gap-2 text-sm font-medium hover:text-primary transition"
-        >
-          <Zap className="h-4 w-4 text-primary" />
-          ScoutFlow
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 transition-transform duration-200",
-              open && "rotate-180"
-            )}
-          />
-        </button>
+        {/* Logo + Mobile Menu */}
+        <div className="flex items-center gap-3" >
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
 
-        {/* Right (optional future area) */}
+          <div className="flex items-center gap-2 font-semibold" onClick={()=>navigate("/")} style={{cursor: "pointer"}}>
+            <Zap className="h-5 w-5 text-primary" />
+            ScoutFlow
+          </div>
+        </div>
+
         <div />
       </header>
 
-      {/* ================= COLLAPSIBLE MENU ================= */}
-      <div
-        className={cn(
-          "fixed top-14 left-0 right-0 z-40 bg-background border-b border-border overflow-hidden transition-all duration-300 ease-in-out",
-          open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-        )}
-      >
-        <nav className="px-6 py-4 space-y-2">
+      {/* ================= DESKTOP SIDEBAR ================= */}
+      <aside className="hidden lg:flex fixed top-14 left-0 h-[calc(100vh-3.5rem)] w-64 flex-col
+  bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950
+  border-r border-white/5
+  shadow-[inset_-1px_0_0_rgba(255,255,255,0.04)]
+"> 
+        <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
 
@@ -66,23 +61,81 @@ export function Sidebar() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                onClick={closeMenu}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                )}
+  "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+  isActive
+    ? "bg-white/10 text-white"
+    : "text-slate-400 hover:bg-white/5 hover:text-white"
+)} 
               >
-                <item.icon className="h-4 w-4" />
+                {/* Active indicator bar */}
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r bg-primary" />
+                )}
+
+                <item.icon className="h-4 w-4 shrink-0" />
                 {item.label}
               </NavLink>
             );
           })}
         </nav>
-      </div>
 
-      {/* Spacer to avoid content hiding under navbar */}
+        <div className="p-4 border-t border-border text-xs text-muted-foreground">
+          ScoutFlow AI Intelligence
+        </div>
+      </aside>
+
+      {/* ================= MOBILE DRAWER ================= */}
+      {mobileOpen && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+
+          {/* Drawer */}
+          <aside className="fixed top-0 left-0 h-full w-64 bg-background z-50 shadow-xl border-r border-border p-4 space-y-4 lg:hidden animate-in slide-in-from-left duration-300">
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 font-semibold">
+                <Zap className="h-5 w-5 text-primary" />
+                ScoutFlow
+              </div>
+
+              <button onClick={() => setMobileOpen(false)}>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <nav className="space-y-2">
+              {navItems.map((item) => {
+                const isActive =
+                  location.pathname === item.to;
+
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </nav>
+          </aside>
+        </>
+      )}
+
+      {/* Spacer for fixed navbar */}
       <div className="h-14" />
     </>
   );
