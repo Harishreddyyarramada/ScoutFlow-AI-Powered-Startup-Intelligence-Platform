@@ -48,6 +48,10 @@ interface AppState {
   savedSearches: SavedSearch[];
   filteredCompanyIds: string[] | null;
 
+  /* NEW: Enriching UI State */
+  enrichingCompanyId: string | null;
+  setEnrichingCompany: (id: string | null) => void;
+
   /* COMPANY */
   enrichCompany: (id: string, data: EnrichmentData) => void;
 
@@ -89,27 +93,48 @@ export const useStore = create<AppState>()(
       filteredCompanyIds: null,
 
       /* ==============================
+         ENRICHING STATE (NEW)
+      ============================== */
+      enrichingCompanyId: null,
+
+      setEnrichingCompany: (id) =>
+        set({ enrichingCompanyId: id }),
+
+      /* ==============================
          ENRICH COMPANY
       ============================== */
       enrichCompany: (id, data) =>
         set((state) => ({
-          companies: state.companies.map((company) =>
-            company.id === id
-              ? {
-                  ...company,
-                  enriched: true,
-                  enrichmentData: data,
-                  description: data.summary || company.description,
-                  tags: data.keywords?.slice(0, 6) || company.tags,
-                  score: Math.min(
-                    100,
-                    company.score +
-                      (data.signals?.filter((s) => s.detected)
-                        .length || 0)
-                  ),
-                }
-              : company
-          ),
+          companies: state.companies.map((company) => {
+            if (company.id !== id) return company;
+
+            const detectedSignals =
+              data.signals?.filter((s) => s.detected).length || 0;
+
+            return {
+              ...company,
+              enriched: true,
+              enrichmentData: data,
+
+              // Replace description with AI summary
+              description:
+                data.summary || company.description,
+
+              // Replace tags with AI keywords
+              tags:
+                data.keywords?.slice(0, 6) ||
+                company.tags,
+
+              // Safe score boost
+              score: Math.min(
+                100,
+                company.score + detectedSignals
+              ),
+            };
+          }),
+
+          // Stop loading automatically
+          enrichingCompanyId: null,
         })),
 
       /* ==============================
@@ -130,13 +155,17 @@ export const useStore = create<AppState>()(
 
       deleteList: (id) =>
         set((state) => ({
-          lists: state.lists.filter((list) => list.id !== id),
+          lists: state.lists.filter(
+            (list) => list.id !== id
+          ),
         })),
 
       renameList: (id, name) =>
         set((state) => ({
           lists: state.lists.map((list) =>
-            list.id === id ? { ...list, name } : list
+            list.id === id
+              ? { ...list, name }
+              : list
           ),
         })),
 
@@ -147,7 +176,10 @@ export const useStore = create<AppState>()(
             !list.companyIds.includes(companyId)
               ? {
                   ...list,
-                  companyIds: [...list.companyIds, companyId],
+                  companyIds: [
+                    ...list.companyIds,
+                    companyId,
+                  ],
                 }
               : list
           ),
@@ -159,9 +191,10 @@ export const useStore = create<AppState>()(
             list.id === listId
               ? {
                   ...list,
-                  companyIds: list.companyIds.filter(
-                    (id) => id !== companyId
-                  ),
+                  companyIds:
+                    list.companyIds.filter(
+                      (id) => id !== companyId
+                    ),
                 }
               : list
           ),
@@ -220,9 +253,6 @@ export const useStore = create<AppState>()(
         }));
       },
 
-      /* ==============================
-         RUN SAVED SEARCH
-      ============================== */
       runSavedSearch: (searchId) => {
         const search = get().savedSearches.find(
           (s) => s.id === searchId
