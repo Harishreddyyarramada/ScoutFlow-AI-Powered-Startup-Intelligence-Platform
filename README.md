@@ -1559,13 +1559,19 @@ MIT License - See [LICENSE](LICENSE) file
 
 ---
 
+---
+
 ## 👨‍💻 Author
 
-**ScoutFlow Development Team**
+### Yarramada Harish Reddy  
+Full Stack Developer | AI & Data-Driven Systems Enthusiast  
 
-- GitHub: [@scoutflow](https://github.com/scoutflow)
-- Email: support@scoutflow.dev
-- Website: https://scoutflow.dev
+Creator of **ScoutFlow – AI-Powered Startup Intelligence Platform**
+
+- 📧 Email: yarramadaharishreddy4144@gmail.com  
+- 🔗 GitHub: https://github.com/Harishreddyyarramada  
+- 🌍 Live Demo: https://scoutflow-ai.vercel.app/  
+- 📂 Source Code: https://github.com/Harishreddyyarramada/ScoutFlow-AI-Powered-Startup-Intelligence-Platform  
 
 ---
 
